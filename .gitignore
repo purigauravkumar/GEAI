@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environment
+.venv/
+
+# Local memory
+memory/
+
+# Crawler data
+workspace/crawler/pages/
+workspace/crawler/url_registry.json
+workspace/crawler/crawled.txt
+workspace/crawler/links.txt
+
+# Project data
+workspace/Projects/
+
+# Secrets
+.env
+
+# Backups
+*.zip
+
+workspace/*
+!workspace/.gitkeep

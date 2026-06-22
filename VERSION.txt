@@ -1,0 +1,33 @@
+GEAI v2.5
+Codename: URL Registry & Crawl Metadata
+
+Features:
+- Autonomous Crawling
+- SHA256 Storage
+- Knowledge Index
+- Concept Graph
+- Facts System
+- URL Registry
+- URL Info
+- Crawl Statistics
+- Registry Rebuild
+
+Status: Stable
+Date: 2026-06-17
+
+GEAI v2.6
+Freshness & Recrawling Engine
+
+Features:
+- Autonomous Crawling
+- SHA256 Deduplication
+- Knowledge Index
+- Concept Graph
+- Facts System
+- URL Registry
+- Freshness Scoring
+- Stale URL Detection
+- Recrawl URL
+- Recrawl Stale
+
+Status: Stable
