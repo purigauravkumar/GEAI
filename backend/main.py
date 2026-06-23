@@ -332,6 +332,22 @@ def command(text: str):
         query = text[16:].strip()
 
         return explain_ranking(query)
+    
+    if text_lower.startswith("ranking breakdown "):
+
+        query = text[18:].strip()
+
+        return ranking_breakdown(query)
+    
+    if text_lower == "ranking health":
+
+        return ranking_health()
+    
+    if text_lower.startswith("search quality "):
+
+        query = text[15:].strip()
+
+        return search_quality_report(query)
 
     if text_lower.startswith("rank knowledge "):
 

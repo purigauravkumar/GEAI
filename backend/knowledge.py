@@ -361,6 +361,92 @@ def explain_ranking(query):
         "total_score": top["score"]
     }
 
+
+def ranking_breakdown(query):
+
+    ranking = explain_ranking(query)
+
+    total = ranking.get(
+        "total_score",
+        0
+    )
+
+    if total == 0:
+
+        return {
+            "query": query,
+            "message": "no results"
+        }
+
+    return {
+        "query": query,
+        "keyword_percent": round(
+            ranking["keyword_score"]
+            * 100 / total,
+            2
+        ),
+        "fact_percent": round(
+            ranking["fact_bonus"]
+            * 100 / total,
+            2
+        ),
+        "concept_percent": round(
+            ranking["concept_bonus"]
+            * 100 / total,
+            2
+        ),
+        "freshness_percent": round(
+            ranking["freshness_score"]
+            * 100 / total,
+            2
+        )
+    }
+
+
+def ranking_health():
+
+    pages = list(
+        PAGES_DIR.glob("*.txt")
+    )
+
+    mapped = 0
+
+    registry = load_url_registry()
+
+    for data in registry.values():
+
+        if data.get("file"):
+
+            mapped += 1
+
+    return {
+        "pages": len(pages),
+        "mapped_pages": mapped,
+        "unmapped_pages": (
+            len(pages) - mapped
+        ),
+        "freshness_enabled": (
+            mapped > 0
+        )
+    }
+
+
+def search_quality_report(query):
+
+    coverage = knowledge_coverage(query)
+
+    ranking = search_report(query)
+
+    return {
+        "query": query,
+        "pages_found": coverage["pages"],
+        "concepts_found": coverage["concepts"],
+        "facts_found": coverage["facts"],
+        "candidate_pages": ranking["candidate_pages"],
+        "ranked_pages": ranking["ranked_pages"],
+        "top_score": ranking["top_score"]
+    }
+
         
 def ask_knowledge(query):
     
