@@ -7,6 +7,34 @@ from pathlib import Path
 from ollama import chat
 import os
 
+STOP_TOPICS = {
+    "this",
+    "that",
+    "with",
+    "from",
+    "your",
+    "what",
+    "other",
+    "more",
+    "using",
+    "about",
+    "user",
+    "status",
+    "source",
+    "into",
+    "when",
+    "where",
+    "which",
+    "their",
+    "there",
+    "have",
+    "been",
+    "will",
+    "would",
+    "could",
+    "should"
+}
+
 def expand_query(query):
     
     aliases_file = MEMORY_FILE.parent / "aliases.txt"
@@ -502,6 +530,9 @@ def top_topics(limit=20):
     topics = []
 
     for topic in concepts:
+        
+        if topic.lower() in STOP_TOPICS:
+            continue
 
         concept_count = len(
             concepts.get(topic, [])
