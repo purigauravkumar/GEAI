@@ -446,7 +446,90 @@ def search_quality_report(query):
         "ranked_pages": ranking["ranked_pages"],
         "top_score": ranking["top_score"]
     }
+    
+    
+def topic_authority(topic):
 
+    coverage = knowledge_coverage(topic)
+
+    authority_score = (
+        coverage["pages"]
+        + coverage["facts"] * 10
+        + coverage["concepts"]
+    )
+
+    return {
+        "topic": topic,
+        "authority_score": authority_score,
+        "pages": coverage["pages"],
+        "facts": coverage["facts"],
+        "concepts": coverage["concepts"]
+    }
+
+       
+def coverage_gaps(topic):
+
+    coverage = knowledge_coverage(topic)
+
+    missing = []
+
+    if coverage["pages"] < 5:
+        missing.append("pages")
+
+    if coverage["facts"] < 3:
+        missing.append("facts")
+
+    if coverage["concepts"] < 20:
+        missing.append("concepts")
+
+    return {
+        "topic": topic,
+        "coverage": (
+            "good"
+            if not missing
+            else "weak"
+        ),
+        "missing": missing
+    }
+
+
+def top_topics(limit=20):
+
+    concepts = load_concepts()
+
+    facts = load_facts()
+
+    topics = []
+
+    for topic in concepts:
+
+        concept_count = len(
+            concepts.get(topic, [])
+        )
+
+        fact_count = len(
+            facts.get(topic, [])
+        )
+
+        authority = (
+            concept_count
+            + fact_count * 10
+        )
+
+        topics.append({
+            "topic": topic,
+            "authority": authority,
+            "concepts": concept_count,
+            "facts": fact_count
+        })
+
+    topics.sort(
+        key=lambda x: x["authority"],
+        reverse=True
+    )
+
+    return topics[:limit]
+       
         
 def ask_knowledge(query):
     

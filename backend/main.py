@@ -348,6 +348,22 @@ def command(text: str):
         query = text[15:].strip()
 
         return search_quality_report(query)
+    
+    if text_lower.startswith("topic authority "):
+
+        topic = text[16:].strip()
+
+        return topic_authority(topic)
+    
+    if text_lower.startswith("coverage gaps "):
+
+        topic = text[14:].strip()
+
+        return coverage_gaps(topic)
+    
+    if text_lower == "top topics":
+
+        return top_topics()
 
     if text_lower.startswith("rank knowledge "):
 
