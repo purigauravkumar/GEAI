@@ -355,6 +355,12 @@ def command(text: str):
 
         return topic_authority(topic)
     
+    if text_lower.startswith("topic profile "):
+
+        topic = text[14:].strip()
+
+        return topic_profile(topic)
+    
     if text_lower.startswith("coverage gaps "):
 
         topic = text[14:].strip()

@@ -33,6 +33,75 @@ STOP_TOPICS = {
     "would",
     "could",
     "should"
+    "2026",
+    "2025",
+    "2024",
+    "page",
+    "pages",
+    "list",
+    "information",
+    "help",
+    "started",
+    "english",
+    "open",
+    "support",
+    "event",
+    "events",
+    "documentation",
+    "developer",
+    "developers",
+    "software",
+    "tools"
+    "email",
+    "contact",
+    "changes",
+    "links",
+    "newsletter",
+    "subscribe",
+    "type",
+    "guide",
+    "learn"
+    "prev",
+    "next",
+    "posted",
+    "have",
+    "page",
+    "pages",
+    "article",
+    "articles",
+    "read",
+    "reading",
+    "view",
+    "views"
+}
+
+STOP_RELATED = {
+    "case",
+    "shared",
+    "short",
+    "stylesheets",
+    "socialize",
+    "fulfil",
+    "using",
+    "other",
+    "more",
+    "this",
+    "that",
+    "with",
+    "from",
+    "about"
+    "prev",
+    "next",
+    "posted",
+    "have",
+    "page",
+    "pages",
+    "article",
+    "articles",
+    "read",
+    "reading",
+    "view",
+    "views"
 }
 
 def expand_query(query):
@@ -493,6 +562,42 @@ def topic_authority(topic):
         "facts": coverage["facts"],
         "concepts": coverage["concepts"]
     }
+    
+    
+def topic_profile(topic):
+
+    coverage = knowledge_coverage(topic)
+
+    authority = topic_authority(topic)
+
+    concepts = load_concepts()
+
+    related = [
+        item
+        for item in concepts.get(
+            topic.lower(),
+            []
+        )
+        if item.lower() not in STOP_RELATED
+    ][:10]
+
+    return {
+        "topic": topic,
+        "authority": authority[
+            "authority_score"
+        ],
+        "pages": coverage["pages"],
+        "facts": coverage["facts"],
+        "concepts": coverage["concepts"],
+        "coverage": (
+            "strong"
+            if authority[
+                "authority_score"
+            ] > 200
+            else "weak"
+        ),
+        "related": related
+    }
 
        
 def coverage_gaps(topic):
@@ -532,6 +637,9 @@ def top_topics(limit=20):
     for topic in concepts:
         
         if topic.lower() in STOP_TOPICS:
+            continue
+        
+        if topic.isdigit():
             continue
 
         concept_count = len(
