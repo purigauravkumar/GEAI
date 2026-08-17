@@ -1,6 +1,6 @@
 # GEAI
 
-**GEAI (Gaurav Evolved Artificial Intelligence)** is a local-first personal AI workspace built around a local Ollama model. It combines conversational AI with persistent memory, project workspaces, web crawling, a searchable knowledge index, concept relationships, facts, URL metadata, freshness scoring, and recrawling tools.
+**GEAI (General Effective Artificial Intelligence)** is a local-first personal AI workspace built around a local Ollama model. It combines conversational AI with persistent memory, project workspaces, web crawling, a searchable knowledge index, concept relationships, facts, URL metadata, freshness scoring, and recrawling tools.
 
 > **Status:** Active personal project / experimental software. Keep the current API on localhost unless you understand and implement the remaining production-security requirements.
 
