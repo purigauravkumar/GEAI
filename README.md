@@ -1,25 +1,25 @@
 # GEAI
 
-**GEAI (Gaurav Evolved Artificial Intelligence)** is a local-first personal AI workspace built around a local Ollama model. The project combines conversational AI with persistent memory, project workspaces, web crawling, a searchable knowledge index, concept relationships, facts, URL metadata, freshness scoring, and recrawling tools.
+**GEAI (Gaurav Evolved Artificial Intelligence)** is a local-first personal AI workspace built around a local Ollama model. It combines conversational AI with persistent memory, project workspaces, web crawling, a searchable knowledge index, concept relationships, facts, URL metadata, freshness scoring, and recrawling tools.
 
-> **Project status:** Active personal project / experimental software. The repository is not yet production-ready for exposure to an untrusted network.
+> **Status:** Active personal project / experimental software. Keep the current API on localhost unless you understand and implement the remaining production-security requirements.
 
-## What GEAI currently contains
+## Features
 
 - Local LLM chat through Ollama
-- Persistent memory stored on the local machine
-- Project-based workspace management
-- Notes and project memory
+- Persistent local memory, facts, concepts, and indexes
+- Project workspaces, notes, and project memory
 - Web crawling and HTML text extraction
 - SHA-256 content-based page deduplication
 - URL registry and crawl metadata
 - Freshness scoring and stale URL detection
 - Knowledge indexing and concept relationships
-- Fact storage and lookup
 - CLI client for the local HTTP API
-- Maintenance and knowledge-health commands
-
-The current version history is recorded in `VERSION.txt` and the development plan is in `ROADMAP.md`.
+- API-key authentication
+- Path-traversal protections for workspace/project operations
+- Crawler SSRF protections, redirect validation, DNS/IP checks, and response-size limits
+- Same-origin link discovery to limit crawler expansion
+- Security tests for authentication and crawler URL validation
 
 ## Architecture
 
@@ -28,32 +28,33 @@ GEAI
 ├── backend/
 │   ├── main.py          # FastAPI application and command router
 │   ├── security.py      # HTTP API-key authentication middleware
-│   ├── crawler.py       # Web crawling, URL registry and knowledge extraction
-│   ├── filesystem.py    # Workspace and project filesystem operations
+│   ├── crawler.py       # Secure web crawler and crawl metadata
+│   ├── filesystem.py    # Workspace/project filesystem operations
 │   ├── memory.py        # Persistent memory, indexes and concepts
 │   ├── facts.py         # Fact storage and lookup
-│   ├── knowledge.py     # Knowledge/search functions
+│   ├── knowledge.py     # Knowledge/search and ranking functions
 │   └── projects.py      # Project operations
-├── brain/               # GEAI design, mission and architecture documents
-├── config/              # Project configuration
+├── brain/               # GEAI design and architecture documents
 ├── specs/               # System specifications
-├── workspace/           # Git-tracked placeholder; runtime data should stay local
+├── tests/               # Security tests
 ├── cli.py               # Interactive CLI client
 ├── requirements.txt
+├── requirements-dev.txt
+├── .env.example
 ├── ROADMAP.md
 └── VERSION.txt
 ```
+
+Runtime data is intentionally stored outside the repository under `GEAI_HOME`.
 
 ## Requirements
 
 - Python 3.10+ recommended
 - Ollama installed and running locally
-- An Ollama model available locally; the current application defaults to `llama3:latest`
-- Windows, Linux or macOS with a writable local data directory
+- An Ollama model available locally; the application currently defaults to `llama3:latest`
+- Windows, Linux, or macOS
 
 ## Installation
-
-Clone the repository and create a virtual environment:
 
 ```bash
 git clone https://github.com/purigauravkumar/GEAI.git
@@ -61,26 +62,32 @@ cd GEAI
 python -m venv .venv
 ```
 
-Activate it on Windows PowerShell:
+Windows PowerShell:
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
 ```
 
-Or on Linux/macOS:
+Linux/macOS:
 
 ```bash
 source .venv/bin/activate
 ```
 
-Install dependencies:
+Install runtime dependencies:
 
 ```bash
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-Install Ollama separately, start the Ollama service, and make sure the configured model exists:
+For development and tests:
+
+```bash
+pip install -r requirements-dev.txt
+```
+
+Install Ollama separately, start it, and download the configured model:
 
 ```bash
 ollama pull llama3:latest
@@ -88,7 +95,7 @@ ollama pull llama3:latest
 
 ## Configuration
 
-Copy `.env.example` to your local environment configuration and set a strong API key. The application reads environment variables directly; it does not automatically load a `.env` file.
+The application reads environment variables directly; it does not automatically load `.env` files.
 
 PowerShell:
 
@@ -104,33 +111,27 @@ export GEAI_HOME="$HOME/GEAI"
 export GEAI_API_KEY="replace-with-a-long-random-secret"
 ```
 
-Keep the API key secret and never commit it to Git.
+`GEAI_HOME` defaults to `~/GEAI` when it is not set. Keep this directory outside the Git repository because it contains personal memory, facts, crawler output, and project data.
 
-### Local data directory
+Never commit a real API key.
 
-Older GEAI code used a hard-coded `D:\GEAI` location. The hardened storage modules now use the `GEAI_HOME` environment variable and default to `~/GEAI`.
+## Run GEAI
 
-Keeping runtime memory and crawler data outside the repository reduces the chance of accidentally committing personal data.
-
-## Running GEAI
-
-Start the FastAPI application from the repository root:
+Start the API from the repository root:
 
 ```bash
 uvicorn backend.main:app --host 127.0.0.1 --port 8000
 ```
 
-Use `127.0.0.1` for local-only operation.
+Use `127.0.0.1` for local-only operation. Do not bind the current application to `0.0.0.0` or expose it directly to the Internet.
 
-The HTTP API now requires the `X-GEAI-API-Key` header for protected endpoints. The root status endpoint and API documentation remain publicly readable on the local server.
-
-In another terminal, run the CLI after setting `GEAI_API_KEY`:
+In another terminal:
 
 ```bash
 python cli.py
 ```
 
-Then try:
+Example:
 
 ```text
 GEAI> Who are you?
@@ -139,7 +140,25 @@ GEAI> What do you remember?
 GEAI> List projects
 ```
 
-## Example commands
+## API authentication
+
+Protected endpoints require:
+
+```http
+X-GEAI-API-Key: <your-secret>
+```
+
+Example:
+
+```bash
+curl -H "X-GEAI-API-Key: $GEAI_API_KEY" "http://127.0.0.1:8000/memory"
+```
+
+If `GEAI_API_KEY` is missing, protected endpoints return `503`. An incorrect key returns `401`.
+
+The root status endpoint and FastAPI documentation routes are intentionally public on the local server.
+
+## Commands
 
 The command router currently supports functionality including:
 
@@ -177,69 +196,104 @@ rebuild index
 rebuild concepts
 ```
 
-## API authentication
+## Crawler security
 
-Protected HTTP requests must include:
+The crawler was hardened against common server-side request forgery and resource-abuse problems.
 
-```http
-X-GEAI-API-Key: <your-secret>
-```
+### URL validation
 
-Example:
+Before a request is made, GEAI:
+
+- accepts only `http` and `https`
+- rejects URLs containing embedded credentials
+- rejects malformed or excessively long URLs
+- resolves the hostname and rejects private, loopback, link-local, multicast, reserved, and unspecified IP addresses
+- rejects `localhost` and `.local` hostnames
+- validates every redirect target using the same rules
+
+### Redirect protection
+
+The crawler does not follow redirects automatically. Redirects are inspected and revalidated, with a maximum redirect count.
+
+### Response limits
+
+Responses are streamed and capped at 2 MiB. Oversized responses are rejected instead of being loaded without a bound into memory.
+
+### Crawl scope
+
+`crawl website <url>` discovers links only on the same origin as the starting URL. This limits uncontrolled crawler expansion.
+
+> **Note:** DNS/IP validation reduces SSRF risk but does not by itself provide a perfect defense against every possible DNS-rebinding or network-layer attack. Keep GEAI on localhost unless stronger network isolation is added.
+
+## Security hardening implemented
+
+The security-hardening branch now includes:
+
+1. Workspace path traversal protection.
+2. Project and note path validation.
+3. Portable storage through `GEAI_HOME`.
+4. Safer atomic JSON persistence.
+5. API-key authentication.
+6. CLI authentication support.
+7. SSRF-oriented crawler URL validation.
+8. Private/special-use IP blocking.
+9. Redirect validation and redirect limits.
+10. Response-size limits.
+11. Same-origin crawler link discovery.
+12. Security tests for authentication and crawler validation.
+13. Removal of the obsolete hard-coded `config/settings.json` file.
+14. Removal of the obsolete repository `workspace/.gitkeep` runtime placeholder.
+
+## Testing
+
+Install development dependencies:
 
 ```bash
-curl -H "X-GEAI-API-Key: $GEAI_API_KEY" "http://127.0.0.1:8000/memory"
+pip install -r requirements-dev.txt
 ```
 
-If `GEAI_API_KEY` is not configured, protected endpoints return `503` instead of silently running without authentication.
+Run the test suite:
 
-## Security hardening included in this branch
+```bash
+pytest -q
+```
 
-The security-hardening branch addresses several concrete problems found during repository review:
+The current tests cover the API-key middleware and crawler URL validation. More integration tests should be added as the API evolves.
 
-1. **Workspace path traversal** — filesystem paths are resolved and checked to remain inside the GEAI workspace before file/folder operations.
-2. **Portable storage** — memory and facts no longer depend on `D:\GEAI`; storage can be selected with `GEAI_HOME`.
-3. **Safer JSON persistence** — memory/index/concept/fact writes use temporary files followed by replacement, reducing the chance of leaving partially written JSON after an interrupted write.
-4. **Safer file handling** — reading a directory through a file endpoint is rejected instead of being treated as a normal file.
-5. **API authentication** — protected HTTP endpoints require a configured `GEAI_API_KEY`, supplied through the `X-GEAI-API-Key` header.
-6. **Repository hygiene** — runtime memory, crawler output and project data remain ignored by Git.
+## Current limitations
 
-## Important security limitations
+GEAI is **not yet production-ready for untrusted network exposure**. Remaining engineering work includes:
 
-The API authentication layer is an important boundary, but it does **not** make GEAI production-secure by itself. Before exposing GEAI to untrusted networks, the following work remains:
+- Convert state-changing HTTP `GET` endpoints to appropriate `POST`/`PUT`/`DELETE` methods.
+- Add request rate limiting.
+- Add a stronger multi-user authorization model if remote access is required.
+- Add HTTPS through a reverse proxy for remote deployments.
+- Define a strict CORS policy for any browser client.
+- Pin runtime dependencies to tested versions.
+- Add CI for tests, linting, dependency/security checks, and syntax validation.
+- Improve Ollama error handling and health checks.
+- Add stronger network isolation if the crawler will ever run against untrusted input.
 
-- Several state-changing operations are still exposed as HTTP `GET` endpoints and should be migrated to appropriate `POST`/`PUT`/`DELETE` methods.
-- The crawler accepts arbitrary HTTP/HTTPS targets and should have SSRF protections, DNS/IP validation, response-size limits and redirect controls.
-- The crawler still contains a legacy hard-coded workspace path in `backend/crawler.py`; this should be migrated to the same `GEAI_HOME` configuration used by the memory and filesystem modules.
-- The single shared API key is suitable for a personal/local tool, not a multi-user identity and authorization system.
-- Dependencies are not pinned to known versions.
-- There are no automated tests or CI checks covering the API, filesystem boundaries and crawler behavior.
-- Ollama availability/model errors are not currently converted into user-friendly API errors.
-- Rate limiting, HTTPS, CORS policy and structured security logging should be added before public deployment.
+## Safe deployment recommendation
 
-These limitations are intentionally documented rather than claiming that GEAI is production-secure.
+For personal use, run GEAI locally:
 
-## Safe deployment guidance
+```bash
+uvicorn backend.main:app --host 127.0.0.1 --port 8000
+```
 
-For personal use, keep GEAI bound to `127.0.0.1` and place its data directory outside the Git repository. If you later want remote access, add at minimum:
-
-- Strong API authentication and authorization
-- HTTPS behind a reverse proxy
-- Rate limiting
-- Appropriate CORS policy
-- SSRF protection for crawler targets
-- Request and response size limits
-- Dependency pinning and automated security checks
-- Automated tests for path traversal and crawler restrictions
-- Non-secret structured logging
+If remote access is eventually required, place GEAI behind a properly configured reverse proxy and implement authentication, authorization, HTTPS, rate limiting, CORS, logging, and network controls before exposing it to untrusted users.
 
 ## Privacy
 
-GEAI stores memory, facts, crawler output and project information locally. Treat the generated memory and crawler directories as potentially sensitive personal data. Do not commit them to a public repository.
+GEAI stores memory, facts, crawler output, and project information locally. Treat the `GEAI_HOME` directory as sensitive personal data and protect it with normal operating-system permissions and backups.
 
-## Development roadmap
+## Project documentation
 
-See `ROADMAP.md` for planned work. The next engineering phase should focus on crawler SSRF protection, HTTP method cleanup, automated security tests, dependency pinning and then expansion of the AI/tool architecture.
+- `ROADMAP.md` — development roadmap
+- `VERSION.txt` — version history
+- `brain/` — project architecture, mission, principles, decisions, and tool documentation
+- `specs/` — system specifications
 
 ## Disclaimer
 
